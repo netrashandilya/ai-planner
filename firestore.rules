@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'studyHoursPerDay', 'peakEnergyTime']) &&
+             data.keys().hasOnly(['uid', 'email', 'studyHoursPerDay', 'peakEnergyTime', 'createdAt', 'updatedAt']) &&
+             data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 150 &&
+             data.studyHoursPerDay is number && data.studyHoursPerDay >= 1 && data.studyHoursPerDay <= 16 &&
+             data.peakEnergyTime in ['Morning', 'Afternoon', 'Night'];
+    }
+
+    // Subject Validation
+    function isValidSubject(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'examDate', 'difficulty']) &&
+             data.keys().hasOnly(['id', 'userId', 'name', 'examDate', 'difficulty', 'priorityScore', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.examDate is string && data.examDate.size() <= 20 &&
+             data.difficulty is number && data.difficulty >= 1 && data.difficulty <= 10;
+    }
+
+    // Task Validation
+    function isValidTask(data) {
+      return data.keys().hasAll(['id', 'userId', 'subjectId', 'subjectName', 'startTime', 'endTime', 'durationHours', 'date', 'status']) &&
+             data.keys().hasOnly(['id', 'userId', 'subjectId', 'subjectName', 'startTime', 'endTime', 'durationHours', 'date', 'status', 'isPeakEnergy', 'difficulty', 'notes', 'createdAt', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.subjectId is string && data.subjectId.size() <= 128 &&
+             data.subjectName is string && data.subjectName.size() <= 100 &&
+             data.startTime is string && data.startTime.size() <= 50 &&
+             data.endTime is string && data.endTime.size() <= 50 &&
+             data.durationHours is number && data.durationHours > 0 && data.durationHours <= 4 &&
+             data.date is string && data.date.size() <= 20 &&
+             data.status in ['scheduled', 'completed', 'missed', 'rescheduled'];
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) &&
+                       incoming().uid == existing().uid;
+      allow delete: if isOwner(userId);
+    }
+
+    // Subjects Collection
+    match /subjects/{subjectId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(subjectId) && isValidSubject(incoming());
+      allow update: if isSignedIn() && isValidId(subjectId) && existing().userId == request.auth.uid &&
+                       isValidSubject(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Tasks Collection
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(taskId) && isValidTask(incoming());
+      allow update: if isSignedIn() && isValidId(taskId) && existing().userId == request.auth.uid &&
+                       isValidTask(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+  }
+}

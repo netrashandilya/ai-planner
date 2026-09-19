@@ -1,0 +1,6 @@
+{
+  "name": "PlanWise AI",
+  "description": "AI-Powered Monochromatic Study Planner with dynamic scheduling, peak energy optimization, and intelligent workload redistribution.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

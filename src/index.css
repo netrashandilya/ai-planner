@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+}
+
+@keyframes floatIsometric1 {
+  0%, 100% {
+    transform: translateY(0px) rotateX(60deg) rotateZ(-30deg);
+  }
+  50% {
+    transform: translateY(-16px) rotateX(60deg) rotateZ(-30deg);
+  }
+}
+
+@keyframes floatIsometric2 {
+  0%, 100% {
+    transform: translateY(0px) rotateX(55deg) rotateZ(32deg) scale(0.95);
+  }
+  50% {
+    transform: translateY(14px) rotateX(55deg) rotateZ(32deg) scale(0.95);
+  }
+}
+
+@keyframes floatIsometric3 {
+  0%, 100% {
+    transform: translateY(0px) rotateX(65deg) rotateZ(-15deg) scale(0.85);
+  }
+  50% {
+    transform: translateY(-12px) rotateX(65deg) rotateZ(-15deg) scale(0.85);
+  }
+}
+
+.animate-float-isometric-1 {
+  animation: floatIsometric1 6.5s ease-in-out infinite;
+}
+
+.animate-float-isometric-2 {
+  animation: floatIsometric2 8s ease-in-out infinite;
+}
+
+.animate-float-isometric-3 {
+  animation: floatIsometric3 7s ease-in-out infinite;
+}
